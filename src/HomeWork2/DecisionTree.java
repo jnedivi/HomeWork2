@@ -14,7 +14,8 @@ class Node {
 	double returnValue;
 	int numberOfInstances;
 	Instances instances; // all the instances that have reaches this node
-	
+	int numOfPositiveInstances;
+	int numOfNegativeInstances;
 
 }
 
