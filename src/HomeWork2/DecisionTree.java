@@ -1,6 +1,7 @@
 package HomeWork2;
 
 import weka.classifiers.Classifier;
+import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.InstanceComparator;
 import weka.core.Instances;
@@ -185,28 +186,142 @@ public class DecisionTree implements Classifier {
 		}
 	}
 
-	@Override
-	public double classifyInstance(Instance instance) {
+    @Override
+   	public double classifyInstance(Instance instance) {
+       	return classifyInstance(rootNode, instance);
+       }
+       
+       
+   	public double classifyInstance(Node node, Instance instance) {
+       	double val = node.returnValue;
+   	    int attributeToCheck = node.attributeIndex;
+   	    int attributeValue = (int) instance.value(attributeToCheck);
+   	    if (node.children != null) {
+   	        if (node.children[attributeValue] != null){
+   	            val = classifyInstance(node.children[attributeValue], instance);
+   	        }
+   	    }
+   	    return val;
+       }
+       
+       
+       
+   	private double calcGain(Node node) {
+   		// Using Entropy
+   		if (m_ImpurityMeasure == ImpurityMeasure.Entropy) {
+   			double info_gain = calcEntropy(node);
 
-    }
-    
-    private double calcChiSquare(Node node){
-    	double chiSquare = 0;
-    	
-    	for(int i = 0; i < node.children.length; i++){
-    		
-    		if(node.children[i] != null){
-    			for(int j = 0; j < 2; j++){
-    				
-    			}
-    		}
-    	}
-    	return chiSquare;
-    }
-    
-    private int getDf(Node node){
-    	return node.numberOfInstances -1;
-    }
+   			for (int i = 0; i < node.children.length; i++) {
+   				if (node.children[i] != null) {
+   					double child_instances = (double) (node.children[i].numberOfInstances)
+   							/ (node.numberOfInstances);
+   					double entropy_of_child = calcEntropy(node.children[i]);
+   					double mult = child_instances * entropy_of_child;
+   					info_gain -= mult;
+   				}
+   			}
+   			return info_gain;
+   		}
+   		// Using Gini
+   		else if (m_ImpurityMeasure == ImpurityMeasure.Gini) {
+   			double gini_gain = calcGini(node);
+   			
+   			for (int i = 0; i < node.children.length; i++) {
+   				if (node.children[i] != null) {
+   					double child_instances = (double) (node.children[i].numberOfInstances)
+   							/ (node.numberOfInstances);
+   					double gini_of_child = calcGini(node.children[i]);
+   					double mult = child_instances * gini_of_child;
+   					gini_gain -= mult;
+   				}
+   			}
+   			return gini_gain;
+   		}
+   		
+   		return 0;
+   	}
+   	
+   	
+       public double calcAvgError(Instances dataSet) {
+   		int amountOfInstances = dataSet.numInstances();
+   		double calculatedClass, realClass;
+   		double classificationMistakes = 0;
+   		for (int i = 0; i < amountOfInstances; i++) {
+   			realClass = dataSet.instance(i).classValue();
+   			calculatedClass = classifyInstance(dataSet.instance(i));
+   			if (realClass != calculatedClass)
+   				classificationMistakes++;
+   		}
+
+   		return (classificationMistakes / amountOfInstances);
+   	}
+       
+       
+       
+       private double calcChiSquare(Node node){
+       	double chiSquare = 0;
+       	
+       	for(int i = 0; i < node.children.length; i++){
+       		
+       		if(node.children[i] != null){
+       			
+       				double e_1 = node.children[i].numberOfInstances
+   							* ((double) node.typeOneInstances / node.numberOfInstances);
+   					double p_1 = (double) node.children[i].typeTwoInstances;
+   					chiSquare += (Math.pow(p_1 - e_1, 2)) / e_1;
+   					
+   					double e_2 = node.children[i].numberOfInstances
+   							* ((double) node.typeOneInstances / node.numberOfInstances);
+   					double p_2 = (double) node.children[i].typeTwoInstances;
+   					chiSquare += (Math.pow(p_2 - e_2, 2)) / e_2;
+   					
+       		}
+       	}
+       	
+       	return chiSquare;
+       }
+       
+       private int getDf(Node node) {
+       	int counter = 0;
+       	Node parent = node;
+       	Node child1 = parent.children[0];
+       	Node child2 = parent.children[1];
+       	
+       	if (child1 != null) { 
+   			counter++;
+       	}
+
+   		if (child2 != null) {
+   			counter++;
+   		}
+   		
+   		return counter;
+       }
+       
+   	private double calcEntropy(Node node) {
+   		double entropy = 0;
+   		double prob_of_type1 = (node.typeOneInstances)/(node.numberOfInstances);
+   		double prob_of_type2 = (node.typeTwoInstances)/(node.numberOfInstances);
+   		
+   		entropy += ((-1) * prob_of_type1 * this.log2(prob_of_type1)) 
+   				+  ((-1) * prob_of_type2 * this.log2(prob_of_type2));
+   			
+   		return entropy;
+   	}
+   	
+   	private double calcGini(Node node) {
+   		double gini = 1;
+   		
+   		double prob_of_type1 = Math.pow((node.typeOneInstances)/(node.numberOfInstances),2);
+   		double prob_of_type2 = Math.pow((node.typeTwoInstances)/(node.numberOfInstances),2);
+
+   		return (gini-(prob_of_type1 + prob_of_type2));
+   	}
+
+   	
+   	private double log2(double number) {
+   		return Math.log(number) / Math.log(2);
+   	}
     
     public void setImpurityMeasure(ImpurityMeasure im){
     	m_ImpurityMeasure = im;
