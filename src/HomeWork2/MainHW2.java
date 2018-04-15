@@ -66,6 +66,7 @@ public class MainHW2 {
 		DecisionTree best_tree = new DecisionTree();
 		// Iterating over every p_value and prune accordingly
 		for (int i = 0; i < treeEntropy.k_p_values.length; i++) {
+			
 			DecisionTree tree = new DecisionTree();
 			tree.setImpurityMeasure(bestMeasure);
 			tree.setPruning(Pruning.Yes);

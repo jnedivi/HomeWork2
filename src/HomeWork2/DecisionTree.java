@@ -19,9 +19,10 @@ class Node {
 	int typeTwoInstances; // blue dots
 	int numberOfInstances;
 	
-	//TODO printNode!!!
-		public void printNode(String tab) {
-	        StringBuilder str = new StringBuilder();
+	//TODO printNode!!	
+	public void printNode(String tab) {
+	        
+		StringBuilder str = new StringBuilder();
 	        if (parent == null) {
 	            str.append("Root\n");
 	        } else {
@@ -43,8 +44,8 @@ class Node {
 	                }
 	            }
 	        }
-	    }
-
+	    
+		}
 }
 
 public class DecisionTree implements Classifier {
@@ -62,7 +63,7 @@ public class DecisionTree implements Classifier {
 	
 	private Pruning m_Pruning = Pruning.No;
 	
-	public static final double[] k_p_values = {0.005, 0.05, 0.25, 0.5, 0.75, 1};
+	public double[] k_p_values = {0.005, 0.05, 0.25, 0.5, 0.75, 1};
 	
 	private double m_BestPvalue;
 
@@ -87,12 +88,15 @@ public class DecisionTree implements Classifier {
 				createChildren(current, bestAttributeIndex, dataSet);
 				
 				int df = getDf(current);
+				//System.out.println(calcChiSquare(current));
+				// System.out.println(getChiSquareValue(df));
 				if(calcChiSquare(current) > getChiSquareValue(df)){
 					for(int i = 0; i < current.children.length; i++){
 						if(current.children[i] != null){
 							tree.add(current.children[i]);
-							current.attributeIndex = bestAttributeIndex;
 						}
+						
+						current.attributeIndex = bestAttributeIndex;
 					}
 				} else current.children = null;
 			}		
@@ -133,7 +137,7 @@ public class DecisionTree implements Classifier {
 		else if  (m_BestPvalue == 0.005) {
 			return op0_005[df-1];
 		}
-		return 0;
+		 return 0;
 	}
 
 	/*
@@ -150,9 +154,7 @@ public class DecisionTree implements Classifier {
 				}else if(instanceType == 1){
 					node.typeTwoInstances++;
 				}			
-			}
-			
-			
+			}		
 		}
 		
 		node.numberOfInstances = node.typeOneInstances + node.typeTwoInstances;
@@ -199,6 +201,7 @@ public class DecisionTree implements Classifier {
 			node.children[i] = new Node();
 			node.children[i].parent = node;
 			node.children[i].instances = new Instances(dataSet, dataSet.numInstances());
+			
 		}
 		
 		// distribute between the children the instances
@@ -214,10 +217,10 @@ public class DecisionTree implements Classifier {
 		}
 		
 		for(int i = 0; i < numOfChildren; i++){
-			if(node.children[i] != null){
-				
+			if(node.children[i] != null){			
 				int check = updateInstancesForNode(node.children[i]);
 				if(check == -1){
+					
 					node.children[i] = null;
 				}
 			}
