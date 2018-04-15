@@ -12,11 +12,11 @@ class Node {
 	Node parent;
 	int attributeIndex;
 	double returnValue;
-	int numberOfInstances;
+	
 	Instances instances; // all the instances that have reaches this node
-	int numOfPositiveInstances;
-	int numOfNegativeInstances;
-
+	int typeOneInstances; // red dots
+	int typeTwoInstances; // blue dots
+	int numberOfInstances;
 }
 
 public class DecisionTree implements Classifier {
@@ -37,14 +37,37 @@ public class DecisionTree implements Classifier {
 		this.buildTree(arg0);
 	}
     
-	public void buildTree(Instances data) throws Excpetion {
+	public void buildTree(Instances dataSet) throws Excpetion {
 		this.rootNode = new Node();
 		Queue<Node> tree = new LinkedList<Node>();
 		tree.add(this.rootNode);
-		// TODO: check terms, if we need to initialize
+		this.rootNode.instances = new Instances(dataSet, dataSet.numInstances());
+		updateInstancesForNode(this.rootNode);
 		
 	}
 	
+	/*
+	 * Updates positive instances, negative instances and numOfInstances for each node
+	 */	
+	private void updateInstancesForNode(Node node){
+		int i = 0;
+		while(i < node.instances.numInstances()){
+			Instance instance = node.instances.get(i);
+			if(instance != null){
+				int instanceType = (int) (node.instances.get(i).classValue());
+				
+				if(instanceType == 0){
+					node.typeOneInstances++;
+				}else if(instanceType == 1){
+					node.typeTwoInstances++;
+				}			
+			}			
+		}
+		
+		node.numberOfInstances = node.typeOneInstances + node.typeTwoInstances;
+		if(node.typeOneInstances < node.typeTwoInstances) node.returnValue = 1;
+		
+	}
     @Override
 	public double classifyInstance(Instance instance) {
 
