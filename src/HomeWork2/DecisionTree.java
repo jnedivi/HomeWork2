@@ -18,12 +18,39 @@ class Node {
 	int typeOneInstances; // red dots
 	int typeTwoInstances; // blue dots
 	int numberOfInstances;
+	
+	//TODO printNode!!!
+		public void printNode(String tab) {
+	        StringBuilder str = new StringBuilder();
+	        if (parent == null) {
+	            str.append("Root\n");
+	        } else {
+	            int attributeValue = (int) instances.get(0).value(parent.attributeIndex);
+	            str.append(tab + "if attribute " + attributeIndex + " = " + attributeValue + "\n");
+	        }
+	        str.append(tab);
+	        if (children == null) {
+	            str.append("Leaf. ");
+	        }
+	        str.append("Returning value: " + returnValue);
+	        System.out.println(str.toString());
+	        if (children != null) {
+	            tab += "\t";
+	            for (int i = 0; i < children.length; i++) {
+	                Node child = children[i];
+	                if (child != null) {
+	                    child.printNode(tab);
+	                }
+	            }
+	        }
+	    }
+
 }
 
 public class DecisionTree implements Classifier {
 	private Node rootNode;
 	
-	public enum ImpurityMeasure{
+	public enum ImpurityMeasure {
 		Entropy, Gini, Null
 	};
 	
@@ -38,6 +65,7 @@ public class DecisionTree implements Classifier {
 	public static final double[] k_p_values = {0.005, 0.05, 0.25, 0.5, 0.75, 1};
 	
 	private double m_BestPvalue;
+
 	
 	@Override
 	public void buildClassifier(Instances arg0) throws Exception {
@@ -48,7 +76,7 @@ public class DecisionTree implements Classifier {
 		this.rootNode = new Node();
 		Queue<Node> tree = new LinkedList<Node>();
 		tree.add(this.rootNode);
-		this.rootNode.instances = new Instances(dataSet, dataSet.numInstances());
+		this.rootNode.instances = new Instances(dataSet);
 		updateInstancesForNode(this.rootNode);
 		
 		while(!tree.isEmpty()){
@@ -70,6 +98,13 @@ public class DecisionTree implements Classifier {
 			}		
 		}
 	}
+	
+	 public void printTree() {
+	        if (rootNode != null) {
+	            rootNode.printNode("");
+	        }
+	    }
+	 
 	/*
 	 * returns relevant chi square value from the chi square chart
 	 * according to df and p-value
@@ -105,18 +140,19 @@ public class DecisionTree implements Classifier {
 	 * Updates positive instances, negative instances and numOfInstances for each node
 	 */	
 	private int updateInstancesForNode(Node node){
-		int i = 0;
-		while(i < node.instances.numInstances()){
+
+		for(int i =0; i < node.instances.numInstances(); i++){
 			Instance instance = node.instances.get(i);
 			if(instance != null){
 				int instanceType = (int)(node.instances.get(i).classValue());
-				
 				if(instanceType == 0){
 					node.typeOneInstances++;
 				}else if(instanceType == 1){
 					node.typeTwoInstances++;
 				}			
-			}			
+			}
+			
+			
 		}
 		
 		node.numberOfInstances = node.typeOneInstances + node.typeTwoInstances;
@@ -159,9 +195,9 @@ public class DecisionTree implements Classifier {
 		node.children = new Node[numOfChildren];
 		
 		// create the children
-		for(int i = 0; i < node.children.length; i++){
+		for(int i = 0; i < numOfChildren; i++){
 			node.children[i] = new Node();
-			node.children[i] = node;
+			node.children[i].parent = node;
 			node.children[i].instances = new Instances(dataSet, dataSet.numInstances());
 		}
 		
@@ -177,9 +213,11 @@ public class DecisionTree implements Classifier {
 			}
 		}
 		
-		for(int i = 0; i < node.children.length; i++){
+		for(int i = 0; i < numOfChildren; i++){
 			if(node.children[i] != null){
-				if(updateInstancesForNode(node) != -1){
+				
+				int check = updateInstancesForNode(node.children[i]);
+				if(check == -1){
 					node.children[i] = null;
 				}
 			}
@@ -240,8 +278,7 @@ public class DecisionTree implements Classifier {
    		
    		return 0;
    	}
-   	
-   	
+   	  	
        public double calcAvgError(Instances dataSet) {
    		int amountOfInstances = dataSet.numInstances();
    		double calculatedClass, realClass;
@@ -281,41 +318,39 @@ public class DecisionTree implements Classifier {
        	return chiSquare;
        }
        
-       private int getDf(Node node) {
-       	int counter = 0;
-       	Node parent = node;
-       	Node child1 = parent.children[0];
-       	Node child2 = parent.children[1];
-       	
-       	if (child1 != null) { 
-   			counter++;
-       	}
-
-   		if (child2 != null) {
-   			counter++;
+    private int getDf(Node node) {
+   		int df = 0;
+   		for (int i = 0; i < node.children.length; i++) {
+   			if (node.children[i] != null) {
+   				df++;
+   			}
    		}
-   		
-   		return counter;
-       }
+   		return df - 1;
+    }
        
    	private double calcEntropy(Node node) {
    		double entropy = 0;
+
    		double prob_of_type1 = (node.typeOneInstances)/(node.numberOfInstances);
    		double prob_of_type2 = (node.typeTwoInstances)/(node.numberOfInstances);
-   		
+   		   		
    		entropy += ((-1) * prob_of_type1 * this.log2(prob_of_type1)) 
    				+  ((-1) * prob_of_type2 * this.log2(prob_of_type2));
    			
+	
    		return entropy;
    	}
    	
    	private double calcGini(Node node) {
-   		double gini = 1;
    		
+   		double giniSum = 0;
+
    		double prob_of_type1 = Math.pow((node.typeOneInstances)/(node.numberOfInstances),2);
    		double prob_of_type2 = Math.pow((node.typeTwoInstances)/(node.numberOfInstances),2);
+   		giniSum += prob_of_type1 + prob_of_type2;
 
-   		return (gini-(prob_of_type1 + prob_of_type2));
+
+   		return (1-(giniSum));
    	}
 
    	
@@ -330,6 +365,16 @@ public class DecisionTree implements Classifier {
     public void setPruning(Pruning status){
     	m_Pruning = status;
     }
+    
+	
+	public void setPValue(double p_value) {
+		m_BestPvalue = p_value;
+	}
+	
+	public Node getRootNode() {
+        return rootNode;
+    }
+	
     
     @Override
 	public double[] distributionForInstance(Instance arg0) throws Exception {
