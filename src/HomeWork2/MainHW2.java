@@ -5,7 +5,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import HomeWork2.DecisionTree.ImpurityMeasure;
-import HomeWork2.DecisionTree.Pruning;
 import weka.core.Instances;
 import HomeWork2.DecisionTree;
 
@@ -69,11 +68,7 @@ public class MainHW2 {
 			
 			DecisionTree tree = new DecisionTree();
 			tree.setImpurityMeasure(bestMeasure);
-			tree.setPruning(Pruning.Yes);
 			tree.setPValue(treeEntropy.k_p_values[i]);
-			if (treeEntropy.k_p_values[i] == 1) {
-				tree.setPruning(Pruning.No);
-			}
 			
 			tree.buildClassifier(trainingCancer);
 			System.out.println("");
@@ -135,6 +130,7 @@ public class MainHW2 {
     }
 
     private static int findMaxNodeHeight(Node node, int maxNodeHeight) {
+    	//System.out.println(node.children.length);
         if (node.children == null) {
             return maxNodeHeight;
         }

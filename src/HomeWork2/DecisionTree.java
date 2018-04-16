@@ -55,17 +55,11 @@ public class DecisionTree implements Classifier {
 		Entropy, Gini, Null
 	};
 	
-	public enum Pruning{
-		No, Yes
-	};
-	
 	private ImpurityMeasure m_ImpurityMeasure = ImpurityMeasure.Null;
-	
-	private Pruning m_Pruning = Pruning.No;
 	
 	public double[] k_p_values = {0.005, 0.05, 0.25, 0.5, 0.75, 1};
 	
-	private double m_BestPvalue;
+	private double m_p_value = 1;
 
 	
 	@Override
@@ -86,11 +80,25 @@ public class DecisionTree implements Classifier {
 			
 			if(bestAttributeIndex != -1){
 				createChildren(current, bestAttributeIndex, dataSet);
-				
+
 				int df = getDf(current);
+				
 				//System.out.println(calcChiSquare(current));
 				// System.out.println(getChiSquareValue(df));
-				if(calcChiSquare(current) > getChiSquareValue(df)){
+				if(m_p_value != 1){
+					if(calcChiSquare(current) > getChiSquareChartValue(df)){
+						for(int i = 0; i < current.children.length; i++){
+							if(current.children[i] != null){
+								tree.add(current.children[i]);
+							}
+							
+							current.attributeIndex = bestAttributeIndex;
+						}
+					} else{
+						// System.out.println("test");
+						current.children = null;
+					}
+				}else{
 					for(int i = 0; i < current.children.length; i++){
 						if(current.children[i] != null){
 							tree.add(current.children[i]);
@@ -98,44 +106,45 @@ public class DecisionTree implements Classifier {
 						
 						current.attributeIndex = bestAttributeIndex;
 					}
-				} else current.children = null;
-			}		
+				}
+			}
 		}
 	}
 	
-	 public void printTree() {
-	        if (rootNode != null) {
-	            rootNode.printNode("");
-	        }
-	    }
+	 public void printTree() {        
+		 if (rootNode != null) {         
+			 rootNode.printNode("");	        
+		 } 
+	 }
 	 
 	/*
 	 * returns relevant chi square value from the chi square chart
 	 * according to df and p-value
 	 */
-	private double getChiSquareValue(int df) {
+	private double getChiSquareChartValue(int df) {
 		
 		// possible values for each p_value/alpa risk
-		double[] op0_005 = {7.879, 10.597, 12.838, 14.860, 16.750, 18.548, 20.278, 21.955, 23.589, 25.188, 26.757, 28.300};
-		double[] op0_05 = {3.841, 5.991, 7.815, 9.488, 11.070, 12.592, 14.067, 15.507, 16.919, 18.307, 19.675, 21.026};
-		double[] op0_25 = {1.323, 2.773, 4.108, 5.385, 6.626, 7.841, 9.037, 10.219, 11.389, 12.549, 13.701, 14.845};
-		double[] op0_5 = {0.455, 1.386, 2.366, 3.357, 4.351, 5.348, 6.346, 7.344, 8.343, 9.342, 10.341, 11.340};
-		double[] op0_75 = {0.102, 0.575, 1.213, 1.923, 2.675, 3.455, 4.255, 5.071, 5.899, 6.737, 7.584, 8.438};
-		
-		if (m_BestPvalue == 0.75) {
-			return op0_75[df-1];
+		double[] column005 = {7.879, 10.597, 12.838, 14.860, 16.750, 18.548, 20.278, 21.955, 23.589, 25.188, 26.757, 28.300, 29.819, 31.319};
+		double[] column05 = {3.841, 5.991, 7.815, 9.488, 11.070, 12.592, 14.067, 15.507, 16.919, 18.307, 19.675, 21.026, 22.362, 23.685};
+		double[] column25 = {1.323, 2.773, 4.108, 5.385, 6.626, 7.841, 9.037, 10.219, 11.389, 12.549, 13.701, 14.845, 15.984, 17.117};
+		double[] column5 = {0.455, 1.386, 2.366, 3.357, 4.351, 5.348, 6.346, 7.344, 8.343, 9.342, 10.341, 11.340, 12.340, 13.339};
+		double[] column75 = {0.102, 0.575, 1.213, 1.923, 2.675, 3.455, 4.255, 5.071, 5.899, 6.737, 7.584, 8.438, 9.299, 10.165};
+
+		//System.out.println(m_p_value);
+		if (m_p_value == 0.75) {
+			return column75[df-1];
 		}
-		else if  (m_BestPvalue == 0.5) {
-			return op0_5[df-1];
+		else if  (m_p_value == 0.5) {
+			return column5[df-1];
 		}
-		else if  (m_BestPvalue == 0.25) {
-			return op0_25[df-1];
+		else if  (m_p_value == 0.25) {
+			return column25[df-1];
 		}
-		else if  (m_BestPvalue == 0.05) {
-			return op0_05[df-1];
+		else if  (m_p_value == 0.05) {
+			return column05[df-1];
 		}
-		else if  (m_BestPvalue == 0.005) {
-			return op0_005[df-1];
+		else if  (m_p_value == 0.005) {
+			return column005[df-1];
 		}
 		 return 0;
 	}
@@ -159,13 +168,16 @@ public class DecisionTree implements Classifier {
 		
 		node.numberOfInstances = node.typeOneInstances + node.typeTwoInstances;
 		if(node.typeOneInstances < node.typeTwoInstances) node.returnValue = 1;
-		if(node.numberOfInstances == 0) return -1;
+		if(node.numberOfInstances == 0){		
+			return -1;	
+		}
 		return 0;
 	}
+	
 	/*
 	 * Finds the best attribute for the next distribution
 	 * 
-	 * @param node
+	 * @param node, dataSet
 	 */
 	private int getBestAttribute(Node node, Instances dataSet){
 		
@@ -189,7 +201,8 @@ public class DecisionTree implements Classifier {
 	}
 	
 	/*
-	 * 
+	 * Creates children for a node based on the number of values in the chosen attribute,
+	 * then distributes the node's instances between the children
 	 */
     private void createChildren(Node node, int attributeIndex, Instances dataSet) {
     	
@@ -217,11 +230,13 @@ public class DecisionTree implements Classifier {
 		}
 		
 		for(int i = 0; i < numOfChildren; i++){
-			if(node.children[i] != null){			
+			if(node.children[i] != null){
 				int check = updateInstancesForNode(node.children[i]);
 				if(check == -1){
-					
+					// System.out.println("null");
 					node.children[i] = null;
+				}else{
+					// System.out.println("test");
 				}
 			}
 		}
@@ -365,13 +380,8 @@ public class DecisionTree implements Classifier {
     	m_ImpurityMeasure = im;
     }
     
-    public void setPruning(Pruning status){
-    	m_Pruning = status;
-    }
-    
-	
 	public void setPValue(double p_value) {
-		m_BestPvalue = p_value;
+		m_p_value = p_value;
 	}
 	
 	public Node getRootNode() {
