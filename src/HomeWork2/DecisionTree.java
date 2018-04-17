@@ -68,6 +68,7 @@ public class DecisionTree implements Classifier {
 	}
     
 	public void buildTree(Instances dataSet) throws Exception {
+		// System.out.println(m_p_value);
 		this.rootNode = new Node();
 		Queue<Node> tree = new LinkedList<Node>();
 		tree.add(this.rootNode);
@@ -84,7 +85,8 @@ public class DecisionTree implements Classifier {
 				int df = getDf(current);
 				
 				//System.out.println(calcChiSquare(current));
-				// System.out.println(getChiSquareValue(df));
+				// System.out.println(getChiSquareChartValue(df));
+				System.out.println(m_p_value);
 				if(m_p_value != 1){
 					if(calcChiSquare(current) > getChiSquareChartValue(df)){
 						for(int i = 0; i < current.children.length; i++){
@@ -95,12 +97,14 @@ public class DecisionTree implements Classifier {
 							current.attributeIndex = bestAttributeIndex;
 						}
 					} else{
-						// System.out.println("test");
+						
 						current.children = null;
 					}
 				}else{
+					
 					for(int i = 0; i < current.children.length; i++){
 						if(current.children[i] != null){
+							// System.out.println(current.children[i].numberOfInstances);
 							tree.add(current.children[i]);
 						}
 						
